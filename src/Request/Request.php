@@ -97,12 +97,9 @@ abstract class Request {
 		$args = [];
 
 		$signature = $this->get_signature();
-		$body = $this->get_request_body();
 
 		if ( ! empty( $signature ) ) {
 			$args['body'] = $signature;
-		} elseif ( ! empty( $body ) ) {
-			$args['body'] = json_encode( $body, JSON_UNESCAPED_SLASHES );
 		}
 
 		$headers = $this->get_request_headers();
@@ -177,20 +174,34 @@ abstract class Request {
 		// @TODO: We'll likely want to make the algorithm a parameter for the method
 
 		$alg = 'RS256';
-		$jws = new SimpleJWS( [
-			'alg'   => $alg,
-			'nonce' => $nonce,
-			'jwk'   => [
-			    'kty' => 'RSA',
-			    'n'   => $this->encoder->encode( $details['rsa']['n'] ),
-			    'e'   => $this->encoder->encode( $details['rsa']['e'] ),
-			],
-		] );
+		$jws = new SimpleJWS;
 
+		$protected_header = [
+			'alg' => $alg,
+			'jwk' => [
+				'kty' => 'RSA',
+				'n'   => $this->encoder->encode( $details['rsa']['n'] ),
+				'e'   => $this->encoder->encode( $details['rsa']['e'] ),
+			],
+		];
+
+		if ( $nonce ) {
+			$protected_header['nonce'] = $nonce;
+			$protected = json_encode( $protected_header, JSON_UNESCAPED_SLASHES );
+		} else {
+			$protected = '';
+		}
+
+		$jws->setHeader( $protected_header );
 		$jws->setPayload( $this->get_request_body() );
 		$jws->sign( $private_key );
-		return $jws->getTokenString();
 
+		return [
+			'header'    => $protected_header,
+			'protected' => $this->encoder->encode( $protected ),
+			'payload'   => $this->encoder->encode( json_encode( $this->get_request_body(), JSON_UNESCAPED_SLASHES ) ),
+			'signature' => $this->encoder->encode( $jws->getTokenString() ),
+		];
 	}
 
 	/**
