@@ -20,6 +20,13 @@ abstract class Request {
 	protected $resource = '';
 
 	/**
+	 * The array of request arguments.
+	 *
+	 * @var array The arguments to send in the request.
+	 */
+	protected $request_args = [];
+
+	/**
 	 * The body content for the request.
 	 *
 	 * @var array The body content to send with the request.
@@ -94,21 +101,21 @@ abstract class Request {
 	 * @return array|\WP_Error    An array of response information on success; \WP_Error on failure.
 	 */
 	public function send() {
-		$args = [];
+		$this->request_args = [];
 
 		$signature = $this->get_signature();
 
 		if ( ! empty( $signature ) ) {
-			$args['body'] = $signature;
+			$this->request_args['body'] = $signature;
 		}
 
 		$headers = $this->get_request_headers();
 
 		if ( ! empty( $headers ) ) {
-			$args['headers'] = $headers;
+			$this->request_args['headers'] = $headers;
 		}
 
-		$result = wp_remote_request( $this->get_resource(), $args );
+		$result = wp_remote_request( $this->get_resource(), $this->get_request_args() );
 
 		$this->set_response( $result );
 
@@ -238,6 +245,15 @@ abstract class Request {
 	 */
 	public function set_resource( $resource ) {
 		$this->resource = $resource;
+	}
+
+	/**
+	 * Get the request args.
+	 *
+	 * @return array The arguments to send in the request.
+	 */
+	public function get_request_args() {
+		return $this->request_args;
 	}
 
 	/**
