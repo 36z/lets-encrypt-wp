@@ -166,11 +166,6 @@ abstract class Request {
 
 		$nonce = $this->get_request_nonce();
 
-		if ( ! $nonce ) {
-			// @TODO: Instead of returning, perhaps we should generate a nonce here
-			return false;
-		}
-
 		$private_key = $keypair->export_private_key( $passphrase );
 
 		if ( ! $private_key ) {
