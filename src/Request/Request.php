@@ -115,7 +115,7 @@ abstract class Request {
 			$this->request_args['headers'] = $headers;
 		}
 
-		$result = wp_remote_request( $this->get_resource(), $this->get_request_args() );
+		$result = wp_remote_request( $this->get_url(), $this->get_request_args() );
 
 		$this->set_response( $result );
 
@@ -209,6 +209,15 @@ abstract class Request {
 			'payload'   => $this->encoder->encode( json_encode( $this->get_request_body(), JSON_UNESCAPED_SLASHES ) ),
 			'signature' => $this->encoder->encode( $jws->getTokenString() ),
 		];
+	}
+
+	/**
+	 * Get the request URL.
+	 *
+	 * @return string The URL for the request.
+	 */
+	public function get_url() {
+		return $this->get_resource() . '/' . $this->get_type();
 	}
 
 	/**

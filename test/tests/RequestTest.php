@@ -10,8 +10,7 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 	}
 
 	public function test_request_signing() {
-		$url = 'https://acme.example.org/stub';
-		$request = new StubRequest( $url );
+		$request = new StubRequest( 'https://acme.example.org' );
 
 		$request->set_request_body( [
 			'hello' => 'world',
@@ -26,4 +25,13 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 
 }
 
-class StubRequest extends LEWP\Request\Request {}
+class StubRequest extends LEWP\Request\Request {
+	/**
+	 * @param string $resource The REST resource URL.
+	 */
+	public function __construct( $resource ) {
+		parent::__construct( $resource );
+		$this->set_type( 'stub' );
+	}
+
+}
