@@ -12,5 +12,6 @@ class Nonce extends Request {
 	public function __construct( $resource ) {
 		$method = 'HEAD';
 		parent::__construct( $resource, $method );
+		$this->set_type( 'new-authz' );
 	}
 }

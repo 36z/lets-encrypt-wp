@@ -14,7 +14,7 @@ class NonceTest extends PHPUnit_Framework_TestCase {
 	}
 
 	private function make_request() {
-		$url  = 'https://acme.example.org/new-authz';
+		$url  = 'https://acme.example.org';
 		$args = array(
 		);
 
@@ -25,7 +25,7 @@ class NonceTest extends PHPUnit_Framework_TestCase {
 		// Mock the remote request
 		\WP_Mock::wpFunction( 'wp_remote_request', array(
 			'args'   => array(
-				$url,
+				$url . '/new-authz',
 				$args,
 			),
 			'times'  => 1,

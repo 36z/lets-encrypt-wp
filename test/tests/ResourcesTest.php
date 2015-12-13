@@ -30,7 +30,7 @@ class ResourcesTest extends PHPUnit_Framework_TestCase {
 	}
 
 	private function get_directory_object() {
-		$url  = 'https://acme.example.org/directory';
+		$url  = 'https://acme.example.org';
 		$args = array(
 		);
 
@@ -41,7 +41,7 @@ class ResourcesTest extends PHPUnit_Framework_TestCase {
 		// Mock the remote request
 		\WP_Mock::wpFunction( 'wp_remote_request', array(
 			'args'   => array(
-				$url,
+				$url . '/directory',
 				$args,
 			),
 			'times'  => 1,

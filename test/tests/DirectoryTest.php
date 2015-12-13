@@ -2,14 +2,15 @@
 
 class DirectoryTest extends PHPUnit_Framework_TestCase {
 	public function test_directory_resource_url_is_set() {
-		$url = 'https://acme.example.org/directory';
+		$url = 'https://acme.example.org';
 		$directory = new \LEWP\Request\Directory( $url );
 
-		$this->assertEquals( $url, $directory->get_resource() );
+		$this->assertEquals( 'https://acme.example.org', $directory->get_resource() );
+		$this->assertEquals( 'https://acme.example.org/directory', $directory->get_url() );
 	}
 
 	public function test_send_generates_response_and_sets_properties() {
-		$url  = 'https://acme.example.org/directory';
+		$url  = 'https://acme.example.org';
 		$args = array(
 		);
 
@@ -20,7 +21,7 @@ class DirectoryTest extends PHPUnit_Framework_TestCase {
 		// Mock the remote request
 		\WP_Mock::wpFunction( 'wp_remote_request', array(
 			'args'   => array(
-				$url,
+				$url . '/directory',
 				$args,
 			),
 			'times'  => 1,
