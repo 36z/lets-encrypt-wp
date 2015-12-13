@@ -44,8 +44,8 @@ class KeyPair {
 	public function generate( $passphrase ) {
 		$config = array(
 			'digest_alg'       => 'sha256',
-			'private_key_bits' => '2048',
-			'private_key_type' => 'OPENSSL_KEYTYPE_RSA',
+			'private_key_bits' => 2048,
+			'private_key_type' => OPENSSL_KEYTYPE_RSA,
 		);
 
 		$resource = openssl_pkey_new( $config );
