@@ -217,7 +217,7 @@ abstract class Request {
 	 * @return string The URL for the request.
 	 */
 	public function get_url() {
-		return $this->get_resource() . '/' . $this->get_type();
+		return $this->get_resource() . '/acme/' . $this->get_type();
 	}
 
 	/**
@@ -280,6 +280,7 @@ abstract class Request {
 	 * @param array $body    The body content to send with the request.
 	 */
 	public function set_request_body( array $body ) {
+		$body['resource'] = $this->get_type();
 		$this->request_body = $body;
 	}
 

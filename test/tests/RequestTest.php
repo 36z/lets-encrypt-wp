@@ -31,7 +31,7 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 		// Mock the remote request
 		\WP_Mock::wpFunction( 'wp_remote_request', array(
 			'args'   => [
-				'https://acme.example.org/stub',
+				'https://acme.example.org/acme/stub',
 				$args,
 			],
 			'times'  => 1,

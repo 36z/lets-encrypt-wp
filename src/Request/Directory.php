@@ -15,4 +15,13 @@ class Directory extends Request {
 		parent::__construct( $resource );
 		$this->set_type( 'directory' );
 	}
+	/**
+	 * Get the request URL.
+	 *
+	 * @return string The URL for the request.
+	 */
+	public function get_url() {
+		return $this->get_resource() . '/directory';
+	}
+
 }

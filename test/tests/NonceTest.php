@@ -25,7 +25,7 @@ class NonceTest extends PHPUnit_Framework_TestCase {
 		// Mock the remote request
 		\WP_Mock::wpFunction( 'wp_remote_request', array(
 			'args'   => array(
-				$url . '/new-authz',
+				$url . '/acme/new-authz',
 				$args,
 			),
 			'times'  => 1,
