@@ -24,7 +24,7 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 		$request->sign( $keypair, 'foo' );
 
 		$args = [
-			'body'    => $request->get_signature(),
+			'body'    => json_encode( $request->get_signature(), JSON_UNESCAPED_SLASHES ),
 			'headers' => $request->get_request_headers(),
 		];
 
@@ -41,12 +41,12 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 		$request->send();
 
 		$request_args = $request->get_request_args();
+		$request_body = json_decode( $request_args['body'] );
 
-		$this->assertNotEquals( $body, $request_args['body'] );
-		$this->assertArrayHasKey( 'header',    $request_args['body'] );
-		$this->assertArrayHasKey( 'protected', $request_args['body'] );
-		$this->assertArrayHasKey( 'payload',   $request_args['body'] );
-		$this->assertArrayHasKey( 'signature', $request_args['body'] );
+		$this->assertObjectHasAttribute( 'header',    $request_body );
+		$this->assertObjectHasAttribute( 'protected', $request_body );
+		$this->assertObjectHasAttribute( 'payload',   $request_body );
+		$this->assertObjectHasAttribute( 'signature', $request_body );
 
 	}
 

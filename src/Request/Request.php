@@ -106,7 +106,7 @@ abstract class Request {
 		$signature = $this->get_signature();
 
 		if ( ! empty( $signature ) ) {
-			$this->request_args['body'] = $signature;
+			$this->request_args['body'] = json_encode( $signature, JSON_UNESCAPED_SLASHES );
 		}
 
 		$headers = $this->get_request_headers();
