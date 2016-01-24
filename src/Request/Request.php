@@ -137,7 +137,7 @@ abstract class Request {
 	/**
 	 * Sign the request using a passphrase-protected public/private key pair.
 	 *
-	 * @param  KeyPair $keypair    A KeyPair object.
+	 * @param  \LEWP\Keys\KeyPair $keypair    A KeyPair object.
 	 * @param  string  $passphrase The passphrase for the KeyPair's private key.
 	 * @return bool True on success, false on failure.
 	 */
@@ -158,7 +158,7 @@ abstract class Request {
 	/**
 	 * Generate a signature used to sign the request.
 	 *
-	 * @param  KeyPair $keypair    A KeyPair object.
+	 * @param  \LEWP\Keys\KeyPair $keypair    A KeyPair object.
 	 * @param  string  $passphrase The passphrase for the KeyPair's private key.
 	 * @return string|bool Signature used to sign the request, boolean false if the request can't be signed.
 	 */
