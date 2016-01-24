@@ -1,4 +1,4 @@
-***Please note that this is an in progress project. It currently does nothing.***
+# ***Please note that this is an in progress project. It currently does nothing.***
 
 [![Coverage Status](https://coveralls.io/repos/tollmanz/lets-encrypt-wp/badge.svg?branch=master&service=github)](https://coveralls.io/github/tollmanz/lets-encrypt-wp?branch=master)
 [![Build Status](https://travis-ci.org/tollmanz/lets-encrypt-wp.svg?branch=master)](https://travis-ci.org/tollmanz/lets-encrypt-wp)
