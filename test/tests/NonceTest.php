@@ -16,6 +16,7 @@ class NonceTest extends PHPUnit_Framework_TestCase {
 	private function make_request() {
 		$url  = 'https://acme.example.org';
 		$args = array(
+			'method' => 'HEAD'
 		);
 
 		$response = MockData::get_head_response();

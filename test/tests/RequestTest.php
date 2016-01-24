@@ -26,6 +26,7 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 		$args = [
 			'body'    => json_encode( $request->get_signature(), JSON_UNESCAPED_SLASHES ),
 			'headers' => $request->get_request_headers(),
+			'method'  => 'GET',
 		];
 
 		// Mock the remote request

@@ -32,6 +32,7 @@ class ResourcesTest extends PHPUnit_Framework_TestCase {
 	private function get_directory_object() {
 		$url  = 'https://acme.example.org';
 		$args = array(
+			'method' => 'GET',
 		);
 
 		$response = MockData::get_directory_response();

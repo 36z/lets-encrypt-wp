@@ -115,6 +115,8 @@ abstract class Request {
 			$this->request_args['headers'] = $headers;
 		}
 
+		$this->request_args['method'] = $this->get_method();
+
 		$result = \wp_remote_request( $this->get_url(), $this->get_request_args() );
 
 		$this->set_response( $result );

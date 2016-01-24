@@ -12,6 +12,7 @@ class DirectoryTest extends PHPUnit_Framework_TestCase {
 	public function test_send_generates_response_and_sets_properties() {
 		$url  = 'https://acme.example.org';
 		$args = array(
+			'method' => 'GET',
 		);
 
 		$response = MockData::get_directory_response();
