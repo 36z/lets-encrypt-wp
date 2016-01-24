@@ -89,9 +89,11 @@ abstract class Request {
 	 * @param  string     $method      The request method.
 	 * @return Request
 	 */
-	public function __construct( $resource = '', $method = 'GET' ) {
+	public function __construct( $resource = '', $method = 'GET', $body = array(), $nonce = '' ) {
 		$this->set_resource( $resource );
 		$this->set_method( $method );
+		$this->set_request_body( $body );
+		$this->set_request_nonce( $nonce );
 		$this->encoder = new Base64UrlSafeEncoder;
 	}
 
