@@ -34,6 +34,15 @@ abstract class Request {
 	protected $request_body = [];
 
 	/**
+	 * The payload for the request.
+	 *
+	 * This is essentially body content that will be encrypted as part of the request.
+	 *
+	 * @var array The payload for the request.
+	 */
+	protected $request_payload = [];
+
+	/**
 	 * The body content from the response.
 	 *
 	 * @var array The body content received in the response.
@@ -89,9 +98,10 @@ abstract class Request {
 	 * @param  string     $method      The request method.
 	 * @return Request
 	 */
-	public function __construct( $resource = '', $method = 'GET', $body = array(), $nonce = '' ) {
+	public function __construct( $resource = '', $method = 'GET', $payload = array(), $body = array(), $nonce = '' ) {
 		$this->set_resource( $resource );
 		$this->set_method( $method );
+		$this->set_request_payload( $payload );
 		$this->set_request_body( $body );
 		$this->set_request_nonce( $nonce );
 		$this->encoder = new Base64UrlSafeEncoder;
@@ -119,7 +129,7 @@ abstract class Request {
 
 		$this->request_args['method'] = $this->get_method();
 
-		$result = \wp_remote_request( $this->get_url(), $this->get_request_args() );
+		$result = \wp_remote_request( $this->get_resource(), $this->get_request_args() );
 
 		$this->set_response( $result );
 
@@ -191,7 +201,7 @@ abstract class Request {
 		];
 
 		$protected = $this->encoder->encode( json_encode( [ 'nonce' => $nonce ], JSON_UNESCAPED_SLASHES ) );
-		$payload = $this->encoder->encode( json_encode( $this->get_request_body(), JSON_UNESCAPED_SLASHES ) );
+		$payload = $this->encoder->encode( json_encode( $this->get_request_payload(), JSON_UNESCAPED_SLASHES ) );
 
 		$signature = NULL;
 		openssl_sign( $protected . '.' . $payload, $signature, $private_key, 'SHA256' );
@@ -202,15 +212,6 @@ abstract class Request {
 			'payload'   => $payload,
 			'signature' => $this->encoder->encode( $signature ),
 		];
-	}
-
-	/**
-	 * Get the request URL.
-	 *
-	 * @return string The URL for the request.
-	 */
-	public function get_url() {
-		return $this->get_resource() . '/acme/' . $this->get_type();
 	}
 
 	/**
@@ -275,6 +276,24 @@ abstract class Request {
 	public function set_request_body( array $body ) {
 		$body['resource'] = $this->get_type();
 		$this->request_body = $body;
+	}
+
+	/**
+	 * Get the request payload.
+	 *
+	 * @return array The payload to send with the request.
+	 */
+	public function get_request_payload() {
+		return $this->request_payload;
+	}
+
+	/**
+	 * Set the request payload.
+	 *
+	 * @param array $payload    The payload to send with the request.
+	 */
+	public function set_request_payload( array $payload ) {
+		$this->request_payload = $payload;
 	}
 
 	/**

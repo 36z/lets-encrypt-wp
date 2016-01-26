@@ -1,6 +1,7 @@
 <?php
 
 namespace LEWP\Keys;
+use \Namshi\JOSE\Base64\Base64UrlSafeEncoder;
 
 class KeyPair {
 	private $id = '';
@@ -56,6 +57,7 @@ class KeyPair {
 
 		$this->private_key = $private_key;
 		$this->public_key  = $details['key'];
+		$this->details     = $details;
 
 	}
 
@@ -104,4 +106,11 @@ class KeyPair {
 		return openssl_pkey_get_private( $this->private_key, $passphrase );
 	}
 
+	public function thumbprint() {
+		$key_string = '{"e":"' . $this->details['rsa']['e'] . '","kty":"RSA","n":"' . $this->details['rsa']['n'] . '"}';
+		$hash = hash( 'sha256', $key_string, true );
+		$encoder = new Base64UrlSafeEncoder;
+
+		return $encoder->encode( $hash );
+	}
 }
