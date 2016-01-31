@@ -107,9 +107,12 @@ class KeyPair {
 	}
 
 	public function thumbprint() {
-		$key_string = '{"e":"' . $this->details['rsa']['e'] . '","kty":"RSA","n":"' . $this->details['rsa']['n'] . '"}';
-		$hash = hash( 'sha256', $key_string, true );
 		$encoder = new Base64UrlSafeEncoder;
+		$encoded_e = $encoder->encode($this->details['rsa']['e']);
+		$encoded_n = $encoder->encode($this->details['rsa']['n']);
+
+		$key_string = '{"e":"' . $encoded_e . '","kty":"RSA","n":"' . $encoded_n . '"}';
+		$hash = hash( 'sha256', $key_string, true );
 
 		return $encoder->encode( $hash );
 	}

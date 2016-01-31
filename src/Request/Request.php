@@ -141,7 +141,7 @@ abstract class Request {
 			$this->set_response_body( $decoded );
 		}
 
-		if ( isset( $result['headers']['replay-nonce'] ) ) {
+		if ( ! empty( $result['headers']['replay-nonce'] ) ) {
 			$this->set_response_nonce( $result['headers']['replay-nonce'] );
 		}
 
@@ -321,7 +321,7 @@ abstract class Request {
 	 * @return string The header value.
 	 */
 	public function get_request_header( $name ) {
-		if ( array_key_exists( $name, $this->reqest_headers ) ) {
+		if ( array_key_exists( $name, $this->request_headers ) ) {
 			return $this->request_headers[ $name ];
 		}
 		return false;
