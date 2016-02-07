@@ -10,12 +10,13 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 	}
 
 	public function test_request_signing() {
-		$request = new StubRequest( 'https://acme.example.org' );
-
+		$url = 'https://acme.example.org/acme/stub';
 		$body = [
 			'hello' => 'world',
 		];
-		$request->set_request_payload( $body );
+
+		$request = new StubRequest( $url, $body );
+
 		$request->set_request_nonce( 'nonce' );
 
 		$keypair = new \LEWP\Keys\KeyPair( 'test' );
@@ -23,42 +24,21 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 
 		$request->sign( $keypair, 'foo' );
 
-		$args = [
-			'body'    => json_encode( $request->get_signature(), JSON_UNESCAPED_SLASHES ),
-			'headers' => $request->get_request_headers(),
-			'method'  => 'GET',
-		];
+		$request_body = $request->get_signature();
 
-		// Mock the remote request
-		\WP_Mock::wpFunction( 'wp_remote_request', array(
-			'args'   => [
-				'https://acme.example.org/acme/stub',
-				$args,
-			],
-			'times'  => 1,
-			'return' => [], // of no concern
-		) );
-
-		$request->send();
-
-		$request_args = $request->get_request_args();
-		$request_body = json_decode( $request_args['body'] );
-
-		$this->assertObjectHasAttribute( 'header',    $request_body );
-		$this->assertObjectHasAttribute( 'protected', $request_body );
-		$this->assertObjectHasAttribute( 'payload',   $request_body );
-		$this->assertObjectHasAttribute( 'signature', $request_body );
-
+		$this->assertArrayHasKey( 'header',    $request_body );
+		$this->assertArrayHasKey( 'protected', $request_body );
+		$this->assertArrayHasKey( 'payload',   $request_body );
+		$this->assertArrayHasKey( 'signature', $request_body );
 	}
-
 }
 
 class StubRequest extends LEWP\Request\Request {
 	/**
 	 * @param string $resource The REST resource URL.
 	 */
-	public function __construct( $resource ) {
-		parent::__construct( $resource );
+	public function __construct( $url, $payload ) {
+		parent::__construct( array( 'url' => $url, 'payload' => $payload, 'encoder' => new \LEWP\Encoder() ) );
 		$this->set_type( 'stub' );
 	}
 
