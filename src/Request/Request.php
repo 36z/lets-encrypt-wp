@@ -36,6 +36,13 @@ abstract class Request {
 	protected $request_payload = [];
 
 	/**
+	 * The body of the request.
+	 *
+	 * @var string The body of a request.
+	 */
+	protected $request_body = '';
+
+	/**
 	 * The body content from the response.
 	 *
 	 * @var array The body content received in the response.
@@ -112,6 +119,7 @@ abstract class Request {
 
 		if ( ! empty( $signature ) ) {
 			$this->request_args['body'] = json_encode( $signature, JSON_UNESCAPED_SLASHES );
+			$this->set_request_body( $this->request_args['body'] );
 		}
 
 		$headers = $this->get_request_headers();
@@ -277,6 +285,25 @@ abstract class Request {
 	 */
 	public function set_request_payload( array $body ) {
 		$this->request_payload = $body;
+	}
+
+	/**
+	 * Get the request body.
+	 *
+	 * @return string The body content sent in the request.
+	 */
+	public function get_request_body() {
+		return $this->request_body;
+	}
+
+	/**
+	 * Set the request body.
+	 *
+	 * @param  string    $body    The request body.
+	 * @return void
+	 */
+	public function set_request_body( $body ) {
+		$this->request_body = $body;
 	}
 
 	/**
