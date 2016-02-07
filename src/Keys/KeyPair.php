@@ -1,7 +1,6 @@
 <?php
 
 namespace LEWP\Keys;
-use \Namshi\JOSE\Base64\Base64UrlSafeEncoder;
 
 class KeyPair {
 	private $id = '';
@@ -11,12 +10,20 @@ class KeyPair {
 	private $private_key = '';
 
 	/**
+	 * @var resource
+	 */
+	private $resource = '';
+
+	private $csr = '';
+
+	/**
 	 * Construct the object.
 	 *
 	 * @param  string     $id    The key pair ID.
 	 */
-	public function __construct( $id ) {
+	public function __construct( $id, $private_key = '' ) {
 		$this->set_id( $id );
+		$this->private_key = $private_key;
 	}
 
 	/**
@@ -43,17 +50,21 @@ class KeyPair {
 	 * @param  string $passphrase The passphrase to encrypt the private key.
 	 */
 	public function generate( $passphrase ) {
-		$config = array(
-			'digest_alg'       => 'sha256',
-			'private_key_bits' => 2048,
-			'private_key_type' => OPENSSL_KEYTYPE_RSA,
-		);
+		if ( empty( $this->private_key ) ) {
+			$config = array(
+				'digest_alg'       => 'sha256',
+				'private_key_bits' => 2048,
+				'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			);
 
-		$resource = openssl_pkey_new( $config );
+			$this->resource = openssl_pkey_new( $config );
+		} else {
+			$this->resource = openssl_pkey_get_private($this->private_key, $passphrase);
+		}
 
-		openssl_pkey_export( $resource, $private_key, $passphrase );
+		openssl_pkey_export( $this->resource, $private_key, $passphrase );
 
-		$details = openssl_pkey_get_details( $resource );
+		$details = openssl_pkey_get_details( $this->resource );
 
 		$this->private_key = $private_key;
 		$this->public_key  = $details['key'];
@@ -96,6 +107,10 @@ class KeyPair {
 		return $this->private_key;
 	}
 
+	public function get_csr() {
+		return $this->csr;
+	}
+
 	/**
 	 * Export the decrypted private key resource.
 	 *
@@ -107,7 +122,7 @@ class KeyPair {
 	}
 
 	public function thumbprint() {
-		$encoder = new Base64UrlSafeEncoder;
+		$encoder = new \LEWP\Base64UrlSafeEncoder;
 		$encoded_e = $encoder->encode($this->details['rsa']['e']);
 		$encoded_n = $encoder->encode($this->details['rsa']['n']);
 
@@ -115,5 +130,65 @@ class KeyPair {
 		$hash = hash( 'sha256', $key_string, true );
 
 		return $encoder->encode( $hash );
+	}
+
+	public function generate_csr( $dn, $configargs = array(), $extraattribs = array() ) {
+		$this->csr = openssl_csr_new( $dn, $this->resource, $configargs );
+		return $this->csr;
+	}
+
+	public function get_csr_pem( $csr_resource ) {
+		openssl_csr_export($csr_resource, $csrout);
+
+		var_dump( $csrout );
+
+		$lines = explode( "\n", trim( $csrout ) );
+
+		// Remove last and first line:
+		unset( $lines[ count( $lines ) - 1 ] );
+		unset( $lines[0] );
+
+		// Join remaining lines:
+		$result = implode( '', $lines );
+
+		var_dump($result);
+
+		return $result;
+	}
+
+	public function generate_csr_2( $dn ) {
+		set_time_limit(300);
+		$privKey = new \phpseclib\Crypt\RSA();
+		extract($privKey->createKey(2048));
+		$privKey->loadKey($privatekey); // $privatekey comes from the extract statement above @todo change this
+
+		$x509 = new \phpseclib\File\X509();
+		$x509->setPrivateKey($privKey);
+
+//		foreach ( $dn as $prop => $value ) {
+//			$x509->setDNProp( $prop, $value );
+//		}
+
+		$x509->setDomain('www.tollmanz.com');
+
+//		$x509->setExtension('subjectAltName', 'DNS:tollmanz.com, DNS:www.tollmanz.com');
+		$x509->setExtension('id-ce-keyUsage', array('digitalSignature', 'keyEncipherment'));
+		$csr = $x509->signCSR( 'sha256WithRSAEncryption' );
+
+		$asci = $x509->saveCSR($csr, \phpseclib\File\X509::FORMAT_PEM);
+
+		var_dump($asci);
+
+		$lines = explode( "\r\n", trim( $asci ) );
+
+		// Remove last and first line:
+		unset( $lines[ count( $lines ) - 1 ] );
+		unset( $lines[0] );
+
+		// Join remaining lines:
+		$result = implode( '', $lines );
+
+		var_dump($result);
+		return $result;
 	}
 }

@@ -1,8 +1,6 @@
 <?php
 
 namespace LEWP\Request;
-use \Namshi\JOSE\SimpleJWS;
-use \Namshi\JOSE\Base64\Base64UrlSafeEncoder;
 
 abstract class Request {
 	/**
@@ -104,7 +102,7 @@ abstract class Request {
 		$this->set_request_payload( $payload );
 		$this->set_request_body( $body );
 		$this->set_request_nonce( $nonce );
-		$this->encoder = new Base64UrlSafeEncoder;
+		$this->encoder = new \LEWP\Base64UrlSafeEncoder;
 	}
 
 	/**
