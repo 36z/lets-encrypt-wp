@@ -1,8 +1,7 @@
 <?php
 
 namespace LEWP\Request;
-use \Namshi\JOSE\SimpleJWS;
-use \Namshi\JOSE\Base64\Base64UrlSafeEncoder;
+use LEWP\Encoder;
 
 abstract class Request {
 	/**
@@ -94,7 +93,7 @@ abstract class Request {
 		$this->set_method( $method );
 		$this->set_request_body( $body );
 		$this->set_request_nonce( $nonce );
-		$this->encoder = new Base64UrlSafeEncoder;
+		$this->encoder = new Encoder();
 	}
 
 	/**
@@ -180,7 +179,6 @@ abstract class Request {
 		// @TODO: We'll likely want to make the algorithm a parameter for the method
 
 		$alg = 'RS256';
-		$jws = new SimpleJWS;
 
 		$protected_header = [
 			'alg' => $alg,
@@ -191,22 +189,17 @@ abstract class Request {
 			],
 		];
 
-		if ( $nonce ) {
-			$protected_header['nonce'] = $nonce;
-			$protected = json_encode( $protected_header, JSON_UNESCAPED_SLASHES );
-		} else {
-			$protected = '';
-		}
+		$protected = $this->encoder->encode( json_encode( [ 'nonce' => $nonce ], JSON_UNESCAPED_SLASHES ) );
+		$payload = $this->encoder->encode( json_encode( $this->get_request_body(), JSON_UNESCAPED_SLASHES ) );
 
-		$jws->setHeader( $protected_header );
-		$jws->setPayload( $this->get_request_body() );
-		$jws->sign( $private_key );
+		$signature = NULL;
+		openssl_sign( $protected . '.' . $payload, $signature, $private_key, 'SHA256' );
 
 		return [
 			'header'    => $protected_header,
-			'protected' => $this->encoder->encode( $protected ),
-			'payload'   => $this->encoder->encode( json_encode( $this->get_request_body(), JSON_UNESCAPED_SLASHES ) ),
-			'signature' => $this->encoder->encode( $jws->getTokenString() ),
+			'protected' => $protected,
+			'payload'   => $payload,
+			'signature' => $this->encoder->encode( $signature ),
 		];
 	}
 
