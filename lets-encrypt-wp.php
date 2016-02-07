@@ -154,8 +154,7 @@ $domainKeyPair = new \LEWP\Keys\KeyPair( 'domain' );
 $domainKeyPair->generate( 'blah' );
 
 $config = array(
-	'config' => __DIR__ . '/openssl.cnf',
-	'digest_alg' => 'sha256',
+	'digest_alg'       => 'sha256',
 	'private_key_type' => OPENSSL_KEYTYPE_RSA,
 	'private_key_bits' => 2048 // ---> obviously good
 );
