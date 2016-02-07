@@ -21,7 +21,7 @@ class DirectoryTest extends PHPUnit_Framework_TestCase {
 		// Mock the remote request
 		\WP_Mock::wpFunction( 'wp_remote_request', array(
 			'args'   => array(
-				$url . '/directory',
+				$url,
 				$args,
 			),
 			'times'  => 1,

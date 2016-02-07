@@ -140,16 +140,19 @@ abstract class Request {
 	/**
 	 * Send the HTTP request.
 	 *
+	 * @param bool $sign Whether or not to sign the request.
 	 * @return array|\WP_Error    An array of response information on success; \WP_Error on failure.
 	 */
-	public function send() {
+	public function send( $sign = false ) {
 		$this->request_args = [];
 
-		$signature = $this->get_signature();
+		if ( true === $sign ) {
+			$signature = $this->get_signature();
 
-		if ( ! empty( $signature ) ) {
-			$this->request_args['body'] = json_encode( $signature, JSON_UNESCAPED_SLASHES );
-			$this->set_request_body( $this->request_args['body'] );
+			if ( ! empty( $signature ) ) {
+				$this->request_args['body'] = json_encode( $signature, JSON_UNESCAPED_SLASHES );
+				$this->set_request_body( $this->request_args['body'] );
+			}
 		}
 
 		$headers = $this->get_request_headers();
@@ -166,9 +169,11 @@ abstract class Request {
 
 		if ( is_array( $result ) && isset( $result['body'] ) ) {
 			$decoded = json_decode( $result['body'], true );
+
 			if ( ! $decoded ) {
 				$decoded = array();
 			}
+
 			$this->set_response_body( $decoded );
 		}
 
@@ -176,7 +181,9 @@ abstract class Request {
 			$this->set_response_nonce( $result['headers']['replay-nonce'] );
 
 			// Add the new nonce to the collector
-			$this->get_nonce_collector()->add_nonce( $this->get_response_nonce() );
+			if ( method_exists( $this->get_nonce_collector(), 'add_nonce' ) ) {
+				$this->get_nonce_collector()->add_nonce( $this->get_response_nonce() );
+			}
 		}
 
 		return $result;
