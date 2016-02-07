@@ -12,11 +12,11 @@ abstract class Request {
 	protected $response = array();
 
 	/**
-	 * The RESTful resource used in the current request.
+	 * The URL for the request.
 	 *
-	 * @var string    URL for the REST resource.
+	 * @var string    The URL for the request.
 	 */
-	protected $resource = '';
+	protected $url = '';
 
 	/**
 	 * The array of request arguments.
@@ -71,6 +71,13 @@ abstract class Request {
 	protected $nonce_collector = '';
 
 	/**
+	 * An Encoder object for encoding parts of the request.
+	 *
+	 * @var string|\LEWP\Encoder    The Encoder object for encoding parts of the request.
+	 */
+	protected $encoder = '';
+
+	/**
 	 * CSRF token received from the request.
 	 *
 	 * @var string    The nonce to protect the next request against CSRF.
@@ -101,23 +108,33 @@ abstract class Request {
 	/**
 	 * Construct the request object.
 	 *
-	 * @param  string                         $resource           The REST resource URL.
+	 * @param  string                         $url                The REST resource URL.
 	 * @param  string                         $method             The request method.
 	 * @param  array                          $payload            The payload for the request. This payload will be signed.
 	 * @param  string|\LEWP\NonceCollector    $nonce_collector    NonceCollector object with nonces.
 	 * @return Request
 	 */
-	public function __construct( $resource = '', $method = 'GET', $payload = array(), $nonce_collector = '' ) {
-		$this->set_resource( $resource );
-		$this->set_method( $method );
-		$this->set_request_payload( $payload );
-
-		if ( ! empty( $nonce_collector ) ) {
-			$this->set_nonce_collector( $nonce_collector );
-			$this->set_request_nonce( $nonce_collector->get_next_nonce() );
+	public function __construct( $args = array() ) {
+		if ( ! empty( $args['url'] ) ) {
+			$this->set_url( $args['url'] );
 		}
 
-		$this->encoder = new Encoder();
+		if ( ! empty( $args['method'] ) ) {
+			$this->set_method( $args['method'] );
+		}
+
+		if ( ! empty( $args['payload'] ) ) {
+			$this->set_request_payload( $args['payload'] );
+		}
+
+		if ( ! empty( $args['nonce_collector'] ) ) {
+			$this->set_nonce_collector( $args['nonce_collector'] );
+			$this->set_request_nonce( $this->nonce_collector->get_next_nonce() );
+		}
+
+		if ( ! empty( $args['encoder'] ) ) {
+			$this->set_encoder( $args['encoder'] );
+		}
 	}
 
 	/**
@@ -237,7 +254,17 @@ abstract class Request {
 	 * @return string The URL for the request.
 	 */
 	public function get_url() {
-		return $this->get_resource() . '/acme/' . $this->get_type();
+		return $this->url;
+	}
+
+	/**
+	 * Set the request URL.
+	 *
+	 * @param  string    $url    The URL for the request.
+	 * @return void
+	 */
+	public function set_url( $url ) {
+		$this->url = $url;
 	}
 
 	/**
@@ -256,24 +283,6 @@ abstract class Request {
 	 */
 	public function set_response( $response ) {
 		$this->response = $response;
-	}
-
-	/**
-	 * Get the resource URL.
-	 *
-	 * @return string    URL for the REST resource.
-	 */
-	public function get_resource() {
-		return $this->resource;
-	}
-
-	/**
-	 * Set the resource URL.
-	 *
-	 * @param string    $resource    URL for the REST resource.
-	 */
-	public function set_resource( $resource ) {
-		$this->resource = $resource;
 	}
 
 	/**
@@ -320,6 +329,25 @@ abstract class Request {
 	 */
 	public function set_request_body( $body ) {
 		$this->request_body = $body;
+	}
+
+	/**
+	 * Get the encoder.
+	 *
+	 * @return \LEWP\Encoder    The encoder to use for the request.
+	 */
+	public function get_encoder() {
+		return $this->encoder;
+	}
+
+	/**
+	 * Set the encoder.
+	 *
+	 * @param  \LEWP\Encoder    $encoder    The encoder instance to use for the request.
+	 * @return void
+	 */
+	public function set_encoder( $encoder ) {
+		$this->encoder = $encoder;
 	}
 
 	/**

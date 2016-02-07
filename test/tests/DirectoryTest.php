@@ -2,15 +2,14 @@
 
 class DirectoryTest extends PHPUnit_Framework_TestCase {
 	public function test_directory_resource_url_is_set() {
-		$url = 'https://acme.example.org';
+		$url = 'https://acme.example.org/directory';
 		$directory = new \LEWP\Request\Directory( $url );
 
-		$this->assertEquals( 'https://acme.example.org', $directory->get_resource() );
 		$this->assertEquals( 'https://acme.example.org/directory', $directory->get_url() );
 	}
 
 	public function test_send_generates_response_and_sets_properties() {
-		$url  = 'https://acme.example.org';
+		$url  = 'https://acme.example.org/directory';
 		$args = array(
 			'method' => 'GET',
 		);
