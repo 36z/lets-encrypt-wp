@@ -3,9 +3,8 @@
     "description": "A WordPress based Let's Encrypt client.",
     "type": "wordpress-plugin",
     "require": {
-    	"php": ">=5.4.8",
-    	"lib-openssl": "*",
-        "namshi/jose": "~6.0"
+        "php": ">=5.4.8",
+        "lib-openssl": "*"
     },
     "require-dev": {
         "phpunit/phpunit": "^4.0.0",
