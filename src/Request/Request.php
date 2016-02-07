@@ -26,11 +26,14 @@ abstract class Request {
 	protected $request_args = [];
 
 	/**
-	 * The body content for the request.
+	 * The payload sent with the request.
 	 *
-	 * @var array The body content to send with the request.
+	 * The payload submitted to the request object is in plaintext; however, the payload will be signed as part of the
+	 * JWT when the request is made.
+	 *
+	 * @var array The payload to send with the request.
 	 */
-	protected $request_body = [];
+	protected $request_payload = [];
 
 	/**
 	 * The body content from the response.
@@ -86,12 +89,13 @@ abstract class Request {
 	 *
 	 * @param  string     $resource    The REST resource URL.
 	 * @param  string     $method      The request method.
+	 * @param  string     $payload     The payload for the request. This payload will be signed.
 	 * @return Request
 	 */
-	public function __construct( $resource = '', $method = 'GET', $body = array(), $nonce = '' ) {
+	public function __construct( $resource = '', $method = 'GET', $payload = array(), $nonce = '' ) {
 		$this->set_resource( $resource );
 		$this->set_method( $method );
-		$this->set_request_body( $body );
+		$this->set_request_payload( $payload );
 		$this->set_request_nonce( $nonce );
 		$this->encoder = new Encoder();
 	}
@@ -190,7 +194,7 @@ abstract class Request {
 		];
 
 		$protected = $this->encoder->encode( json_encode( [ 'nonce' => $nonce ], JSON_UNESCAPED_SLASHES ) );
-		$payload = $this->encoder->encode( json_encode( $this->get_request_body(), JSON_UNESCAPED_SLASHES ) );
+		$payload = $this->encoder->encode( json_encode( $this->get_request_payload(), JSON_UNESCAPED_SLASHES ) );
 
 		$signature = NULL;
 		openssl_sign( $protected . '.' . $payload, $signature, $private_key, 'SHA256' );
@@ -262,8 +266,8 @@ abstract class Request {
 	 *
 	 * @return array The body content to send with the request.
 	 */
-	public function get_request_body() {
-		return $this->request_body;
+	public function get_request_payload() {
+		return $this->request_payload;
 	}
 
 	/**
@@ -271,9 +275,8 @@ abstract class Request {
 	 *
 	 * @param array $body    The body content to send with the request.
 	 */
-	public function set_request_body( array $body ) {
-		$body['resource'] = $this->get_type();
-		$this->request_body = $body;
+	public function set_request_payload( array $body ) {
+		$this->request_payload = $body;
 	}
 
 	/**

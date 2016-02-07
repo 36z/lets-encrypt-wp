@@ -15,7 +15,7 @@ class RequestTest extends PHPUnit_Framework_TestCase {
 		$body = [
 			'hello' => 'world',
 		];
-		$request->set_request_body( $body );
+		$request->set_request_payload( $body );
 		$request->set_request_nonce( 'nonce' );
 
 		$keypair = new \LEWP\Keys\KeyPair( 'test' );
