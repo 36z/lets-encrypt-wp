@@ -64,6 +64,13 @@ abstract class Request {
 	protected $request_nonce = '';
 
 	/**
+	 * A NonceCollector object for managing nonces.
+	 *
+	 * @var string|\LEWP\NonceCollector    The NonceCollector object for managing nonces.
+	 */
+	protected $nonce_collector = '';
+
+	/**
 	 * CSRF token received from the request.
 	 *
 	 * @var string    The nonce to protect the next request against CSRF.
@@ -94,16 +101,22 @@ abstract class Request {
 	/**
 	 * Construct the request object.
 	 *
-	 * @param  string     $resource    The REST resource URL.
-	 * @param  string     $method      The request method.
-	 * @param  string     $payload     The payload for the request. This payload will be signed.
+	 * @param  string                         $resource           The REST resource URL.
+	 * @param  string                         $method             The request method.
+	 * @param  array                          $payload            The payload for the request. This payload will be signed.
+	 * @param  string|\LEWP\NonceCollector    $nonce_collector    NonceCollector object with nonces.
 	 * @return Request
 	 */
-	public function __construct( $resource = '', $method = 'GET', $payload = array(), $nonce = '' ) {
+	public function __construct( $resource = '', $method = 'GET', $payload = array(), $nonce_collector = '' ) {
 		$this->set_resource( $resource );
 		$this->set_method( $method );
 		$this->set_request_payload( $payload );
-		$this->set_request_nonce( $nonce );
+
+		if ( ! empty( $nonce_collector ) ) {
+			$this->set_nonce_collector( $nonce_collector );
+			$this->set_request_nonce( $nonce_collector->get_next_nonce() );
+		}
+
 		$this->encoder = new Encoder();
 	}
 
@@ -144,6 +157,9 @@ abstract class Request {
 
 		if ( isset( $result['headers']['replay-nonce'] ) ) {
 			$this->set_response_nonce( $result['headers']['replay-nonce'] );
+
+			// Add the new nonce to the collector
+			$this->get_nonce_collector()->add_nonce( $this->get_response_nonce() );
 		}
 
 		return $result;
@@ -380,6 +396,24 @@ abstract class Request {
 	 */
 	public function set_request_nonce( $request_nonce ) {
 		$this->request_nonce = $request_nonce;
+	}
+
+	/**
+	 * Get the NonceCollector object.
+	 *
+	 * @return \LEWP\NonceCollector    The NonceCollector object to manage nonces.
+	 */
+	public function get_nonce_collector() {
+		return $this->nonce_collector;
+	}
+
+	/**
+	 * Set the NonceCollector.
+	 *
+	 * @param \LEWP\NonceCollector    $request_nonce    The NonceCollector object.
+	 */
+	public function set_nonce_collector( $request_nonce ) {
+		$this->nonce_collector = $request_nonce;
 	}
 
 	/**
