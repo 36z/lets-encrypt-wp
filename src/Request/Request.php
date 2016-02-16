@@ -1,7 +1,6 @@
 <?php
 
 namespace LEWP\Request;
-use LEWP\Encoder;
 
 abstract class Request {
 	/**
@@ -55,6 +54,13 @@ abstract class Request {
 	 * @var array Array of headers keyed by their name.
 	 */
 	protected $request_headers = [];
+
+	/**
+	 * Array of headers for the response.
+	 *
+	 * @var array Array of headers keyed by their name.
+	 */
+	protected $response_headers = [];
 
 	/**
 	 * CSRF token for the request.
@@ -175,6 +181,10 @@ abstract class Request {
 			}
 
 			$this->set_response_body( $decoded );
+
+			if ( isset( $result['headers'] ) ) {
+				$this->set_response_headers( $result['headers'] );
+			}
 		}
 
 		if ( isset( $result['headers']['replay-nonce'] ) ) {
@@ -373,6 +383,24 @@ abstract class Request {
 	 */
 	public function set_response_body( array $body ) {
 		$this->response_body = $body;
+	}
+
+	/**
+	 * Get the response headers.
+	 *
+	 * @return array The headers received in the response.
+	 */
+	public function get_response_headers() {
+		return $this->response_headers;
+	}
+
+	/**
+	 * Set the response headers.
+	 *
+	 * @param array $headers The headers received in the response.
+	 */
+	public function set_response_headers( array $headers ) {
+		$this->response_headers = $headers;
 	}
 
 	/**
