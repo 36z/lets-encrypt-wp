@@ -2,10 +2,17 @@
 
 namespace LEWP\Keys;
 
+use LEWP\Encoder;
+
 class KeyPair {
 	private $id = '';
 
 	private $public_key = '';
+
+	/**
+	 * @var resource
+	 */
+	private $resource = '';
 
 	private $private_key = '';
 
@@ -14,7 +21,7 @@ class KeyPair {
 	 *
 	 * @param  string     $id    The key pair ID.
 	 */
-	public function __construct( $id ) {
+	public function __construct( $id, $private_key = '' ) {
 		$this->set_id( $id );
 	}
 
@@ -42,21 +49,24 @@ class KeyPair {
 	 * @param  string $passphrase The passphrase to encrypt the private key.
 	 */
 	public function generate( $passphrase ) {
-		$config = array(
-			'digest_alg'       => 'sha256',
-			'private_key_bits' => 2048,
-			'private_key_type' => OPENSSL_KEYTYPE_RSA,
-		);
+		if ( empty( $this->private_key ) ) {
+			$config = array(
+				'digest_alg'       => 'sha256',
+				'private_key_bits' => 2048,
+				'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			);
 
-		$resource = openssl_pkey_new( $config );
+			$this->resource = openssl_pkey_new( $config );
+			openssl_pkey_export( $this->resource, $private_key, $passphrase );
+			$this->private_key = $private_key;
+		} else {
+			$this->resource = openssl_pkey_get_private( $this->private_key, $passphrase );
+		}
 
-		openssl_pkey_export( $resource, $private_key, $passphrase );
+		$details = openssl_pkey_get_details( $this->resource );
 
-		$details = openssl_pkey_get_details( $resource );
-
-		$this->private_key = $private_key;
 		$this->public_key  = $details['key'];
-
+		$this->details     = $details;
 	}
 
 	/**
@@ -70,10 +80,8 @@ class KeyPair {
 	 * }
 	 */
 	public function read( array $keypair ) {
-
 		$this->private_key = $keypair['private'];
 		$this->public_key  = $keypair['public'];
-
 	}
 
 	/**
@@ -104,4 +112,19 @@ class KeyPair {
 		return openssl_pkey_get_private( $this->private_key, $passphrase );
 	}
 
+	/**
+	 * Generate a fingerprint for the key.
+	 *
+	 * @return string base64 encoded key fingerprint.
+	 */
+	public function thumbprint() {
+		$encoder   = new Encoder();
+		$encoded_e = $encoder->encode( $this->details['rsa']['e'] );
+		$encoded_n = $encoder->encode( $this->details['rsa']['n'] );
+
+		$key_string = '{"e":"' . $encoded_e . '","kty":"RSA","n":"' . $encoded_n . '"}';
+		$hash       = hash( 'sha256', $key_string, true );
+
+		return $encoder->encode( $hash );
+	}
 }
