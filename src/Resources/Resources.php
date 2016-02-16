@@ -22,6 +22,16 @@ class Resources {
 		}
 	}
 
+	public function find_resource( $name ) {
+		$resource = '';
+
+		if ( isset( $this->get_resource_urls()[ $name ] ) ) {
+			$resource = $this->get_resource_urls()[ $name ];
+		}
+
+		return $resource;
+	}
+
 	/**
 	 * Get the resources out of a request body.
 	 *
