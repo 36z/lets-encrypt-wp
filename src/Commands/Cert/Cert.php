@@ -8,6 +8,7 @@ use LEWP\LinkParser;
 use LEWP\NonceCollector;
 use LEWP\Request\Authorization;
 use LEWP\Request\AuthorizationStatus;
+use LEWP\Request\Certificate;
 use LEWP\Request\Challenge;
 use LEWP\Request\Directory;
 use LEWP\Request\Registration;
@@ -88,7 +89,10 @@ class Cert extends WP_CLI_Command {
 
 			// @todo: Figure out what the key is and properly import it for use; right now, it only supports a stored key
 			$auth_key_object = $key_storage->get( $auth_key );
-			$auth_key_object->generate( $auth_key_passphrase );
+
+			if ( false !== $auth_key_object ) {
+				$auth_key_object->generate( $auth_key_passphrase );
+			}
 		}
 
 		if ( ! empty( $assoc_args['email'] ) ) {
@@ -272,11 +276,159 @@ class Cert extends WP_CLI_Command {
 
 	public function terms_of_service( $args, $assoc_args ) {}
 
-	public function authorization( $args, $assoc_args ) {}
+	public function authorization( $args, $assoc_args ) {
+
+	}
 
 	public function challenge( $args, $assoc_args ) {}
 
-	public function certificate( $args, $assoc_args ) {}
+	/**
+	 * Prints a greeting.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <directory-uri>
+	 * : The directory URI for the CA's ACME server.
+	 *
+	 * <domain>
+	 * : The domain to issue a certificate for.
+	 *
+	 * <auth-key>
+	 * : ID for stored key, path to key, or DER encoded key.
+	 *
+	 * <auth-key-passphrase>
+	 * : The passphrase used to encrypt the auth key.
+	 *
+	 * <cert-private-key>
+	 * : ID for stored key, path to key, or DER encoded key.
+	 *
+	 * <cert-private-key-passphrase>
+	 * : The passphrase used to encrypt the certificate private key.
+	 *
+	 * <debug-level>
+	 * : Specify the level of debug information to display.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp example hello Newman
+	 *
+	 * @synopsis --directory-uri=<directory-uri> --domain=<domain> --auth-key=<auth-key> --auth-key-passphrase=<auth-key-passphrase> --cert-private-key=<cert-private-key> --cert-private-key-passphrase=<cert-private-key-passphrase> [--debug-level=<debug>]
+	 * @subcommand certificate
+	 */
+	public function certificate( $args, $assoc_args ) {
+		$directory_uri               = '';
+		$domain                      = '';
+		$auth_key                    = '';
+		$auth_key_passphrase         = '';
+		$cert_private_key            = '';
+		$cert_private_key_passphrase = '';
+		$debug                       = 'v';
+
+		// Prepare a key storage object to handle keys
+		$key_storage = Option::get_instance();
+
+		if ( ! empty( $assoc_args['directory-uri'] ) ) {
+			$directory_uri = $assoc_args['directory-uri'];
+		}
+
+		if ( ! empty( $assoc_args['domain'] ) ) {
+			$domain = $assoc_args['domain'];
+		}
+
+		if ( ! empty( $assoc_args['auth-key-passphrase'] ) ) {
+			$auth_key_passphrase = $assoc_args['auth-key-passphrase'];
+		}
+
+		if ( ! empty( $assoc_args['auth-key'] ) ) {
+			$auth_key = $assoc_args['auth-key'];
+
+			// @todo: Figure out what the key is and properly import it for use; right now, it only supports a stored key
+			$auth_key_object = $key_storage->get( $auth_key );
+
+			if ( false !== $auth_key_object ) {
+				$auth_key_object->generate( $auth_key_passphrase );
+			}
+		}
+
+		if ( empty( $auth_key_object ) ) {
+			Utils::display_error( 'No auth key exists' );
+		}
+
+		if ( ! empty( $assoc_args['cert-private-key-passphrase'] ) ) {
+			$cert_private_key_passphrase = $assoc_args['cert-private-key-passphrase'];
+		}
+
+		if ( ! empty( $assoc_args['cert-private-key'] ) ) {
+			$cert_private_key = $assoc_args['cert-private-key'];
+
+			// @todo: Figure out what the key is and properly import it for use; right now, it only supports a stored key
+			$cert_private_key_object = $key_storage->get( $cert_private_key );
+
+			if ( false !== $cert_private_key_object ) {
+				$cert_private_key_object->generate( $cert_private_key_passphrase );
+			}
+		}
+
+		if ( ! empty( $assoc_args['debug-level'] ) ) {
+			$debug = $assoc_args['debug-level'];
+		}
+
+		$directory_request = new Directory( $directory_uri );
+		$directory_request->send();
+
+		// Validate and store the resources
+		$resources = new Resources( $directory_request->get_response_body() );
+		Utils::display_debug_message( $debug, '', 'resources discovered', $resources->get_resource_urls() );
+
+		// Initialize our nonce collector that tracks nonces throughout the nonce flow
+		$nonce_collector = new NonceCollector( $directory_request->get_response_nonce() );
+
+		// Prepare the encoder object to pass around
+		$encoder = new Encoder();
+
+		// Generate a new auth key if needed
+		if ( empty ( $cert_private_key_object ) ) {
+			$cert_private_key_object = new KeyPair( $cert_private_key );
+			$cert_private_key_object->generate( $cert_private_key_passphrase );
+
+			// Store the key for future use
+			$option_storage = Option::get_instance();
+			$option_storage->save( $cert_private_key_object );
+
+			Utils::display_line( 'Generated certificate private key' );
+		}
+
+		$config = array(
+			'digest_alg'       => 'sha256',
+			'private_key_type' => OPENSSL_KEYTYPE_RSA,
+			'private_key_bits' => 2048,
+		);
+
+		$dn = array(
+			'commonName' => $domain,
+		);
+
+		Utils::display_debug_message( $debug, 'Generating CSR' );
+		$cert_private_key_object->generate_csr( $dn, $config );
+		Utils::display_debug_message( $debug, '', $cert_private_key_object->get_csr_pem( $cert_private_key_object->get_csr() ) );
+
+		$certificate_request = new Certificate(
+			'new-cert', $cert_private_key_object->get_csr_pem( $cert_private_key_object->get_csr() ), $resources, $nonce_collector, $encoder );
+		$certificate_request->sign( $auth_key_object, $auth_key_passphrase );
+
+		Utils::display_debug_message( $debug, 'Sending certificate request' );
+		$certificate_request->send( true );
+
+		Utils::display_debug_message( $debug, '', "-----BEGIN CERTIFICATE-----\n" . chunk_split( base64_encode( $certificate_request->get_response()['body'] ), 64, "\n" ) . "-----END CERTIFICATE-----\n" );
+	}
+
+	private function _get_resources( $directory_uri ) {
+		$directory_request = new Directory( $directory_uri );
+		$directory_request->send();
+
+		// Validate and store the resources
+		return new Resources( $directory_request->get_response_body() );
+	}
 }
 
 WP_CLI::add_command( 'cert', '\LEWP\Commands\Cert\Cert' );

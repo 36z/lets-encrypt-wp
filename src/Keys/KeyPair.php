@@ -14,6 +14,8 @@ class KeyPair {
 	 */
 	private $resource = '';
 
+	private $csr = '';
+
 	private $private_key = '';
 
 	/**
@@ -102,6 +104,10 @@ class KeyPair {
 		return $this->private_key;
 	}
 
+	public function get_csr() {
+		return $this->csr;
+	}
+
 	/**
 	 * Export the decrypted private key resource.
 	 *
@@ -126,5 +132,23 @@ class KeyPair {
 		$hash       = hash( 'sha256', $key_string, true );
 
 		return $encoder->encode( $hash );
+	}
+
+	public function generate_csr( $dn, $config = array(), $attributes = array() ) {
+		$this->csr = openssl_csr_new( $dn, $this->resource, $config );
+		return $this->csr;
+	}
+
+	public function get_csr_pem( $csr_resource ) {
+		openssl_csr_export($csr_resource, $csrout);
+		$lines = explode( "\n", trim( $csrout ) );
+
+		// Remove last and first line:
+		unset( $lines[ count( $lines ) - 1 ] );
+		unset( $lines[0] );
+
+		// Join remaining lines:
+		$result = implode( '', $lines );
+		return $result;
 	}
 }
