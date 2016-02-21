@@ -12,4 +12,6 @@ namespace LEWP;
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-new Commands\Cert\Cert();
+if ( defined( 'WP_CLI' ) && true === WP_CLI) {
+	new WordPress\Commands\Cert\Cert();
+}

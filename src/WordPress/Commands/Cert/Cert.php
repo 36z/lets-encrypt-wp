@@ -1,6 +1,6 @@
 <?php
 
-namespace LEWP\Commands\Cert;
+namespace LEWP\WordPress\Commands\Cert;
 use LEWP\Encoder;
 use LEWP\Keys\KeyPair;
 use LEWP\Keys\Storage\Option;
@@ -16,7 +16,7 @@ use LEWP\Request\TermsOfService;
 use LEWP\Resources\Resources;
 use WP_CLI;
 use WP_CLI_Command;
-use \LEWP\Commands\Utils;
+use LEWP\WordPress\Commands\Utils;
 
 /**
  * Implements example command.
@@ -116,15 +116,13 @@ class Cert extends WP_CLI_Command {
 
 		// @todo: we need to cache either the directory request or the resulting resources object. It does not make sense that these resources will change often.
 
-		$directory_request = new Directory( $directory_uri );
-		$directory_request->send();
-
 		// Validate and store the resources
-		$resources = new Resources( $directory_request->get_response_body() );
+		$directory = new \LEWP\WordPress\Object\Directory( $directory_uri );
+		$resources = new Resources( $directory->populate() );
 		Utils::display_debug_message( $debug, '', 'resources discovered', $resources->get_resource_urls() );
 
 		// Initialize our nonce collector that tracks nonces throughout the nonce flow
-		$nonce_collector = new NonceCollector( $directory_request->get_response_nonce() );
+		$nonce_collector = new NonceCollector( $directory_uri );
 
 		// Prepare the encoder object to pass around
 		$encoder = new Encoder();
@@ -262,17 +260,119 @@ class Cert extends WP_CLI_Command {
 		if ( ! empty( $assoc_args['uri'] ) ) {
 			$uri = $assoc_args['uri'];
 
-			// Make the request to the directory URI
-			$directory_request = new Directory( $uri );
-			$directory_request->send();
+			$directory_object = new \LEWP\WordPress\Object\Directory( $uri );
+			$data = $directory_object->populate();
 
-			Utils::display_success( json_encode( $directory_request->get_response_body() ) );
+			Utils::display_success( json_encode( $data ) );
 		} else {
 			Utils::display_error( 'command requires a `--uri` argument' );
 		}
 	}
 
-	public function registration( $args, $assoc_args ) {}
+	/**
+	 * Prints a greeting.
+	 *
+	 * ## OPTIONS
+	 *
+	 * <directory-uri>
+	 * : The directory URI for the CA's ACME server.
+	 *
+	 * <domain>
+	 * : The domain to issue a certificate for.
+	 *
+	 * <auth-key>
+	 * : ID for stored key, path to key, or DER encoded key.
+	 *
+	 * <auth-key-passphrase>
+	 * : The passphrase used to encrypt the auth key.
+	 *
+	 * <email>
+	 * : The email address for the registration request.
+	 *
+	 * <debug-level>
+	 * : Specify the level of debug information to display.
+	 *
+	 * ## EXAMPLES
+	 *
+	 *     wp example hello Newman
+	 *
+	 * @synopsis --directory-uri=<directory-uri> --domain=<domain> --auth-key=<auth-key> --auth-key-passphrase=<auth-key-passphrase> --email=<email> [--debug-level=<debug>]
+	 * @subcommand registration
+	 */
+	public function registration( $args, $assoc_args ) {
+		$directory_uri       = '';
+		$auth_key_passphrase = '';
+		$auth_key            = '';
+		$email               = '';
+		$debug               = 'v';
+
+		// Prepare a key storage object to handle keys
+		$key_storage = Option::get_instance();
+
+		if ( ! empty( $assoc_args['directory-uri'] ) ) {
+			$directory_uri = $assoc_args['directory-uri'];
+		}
+
+		if ( ! empty( $assoc_args['auth-key-passphrase'] ) ) {
+			$auth_key_passphrase = $assoc_args['auth-key-passphrase'];
+		}
+
+		if ( ! empty( $assoc_args['auth-key'] ) ) {
+			$auth_key = $assoc_args['auth-key'];
+
+			// @todo: Figure out what the key is and properly import it for use; right now, it only supports a stored key
+			$auth_key_object = $key_storage->get( $auth_key );
+
+			if ( false !== $auth_key_object ) {
+				$auth_key_object->generate( $auth_key_passphrase );
+			}
+		}
+
+		if ( ! empty( $assoc_args['email'] ) ) {
+			$email = $assoc_args['email'];
+		}
+
+		if ( ! empty( $assoc_args['debug-level'] ) ) {
+			$debug = $assoc_args['debug-level'];
+		}
+
+		// Kick things off by getting the directory information and storing it for later use
+		Utils::display_debug_message( $debug, 'Discovering ACME resources' );
+
+		// @todo: we need to cache either the directory request or the resulting resources object. It does not make sense that these resources will change often.
+
+		$directory_request = new Directory( $directory_uri );
+		$directory_request->send();
+
+		// Validate and store the resources
+		$resources = new Resources( $directory_request->get_response_body() );
+		Utils::display_debug_message( $debug, '', 'resources discovered', $resources->get_resource_urls() );
+
+		// Initialize our nonce collector that tracks nonces throughout the nonce flow
+		$nonce_collector = new NonceCollector( $directory_request->get_response_nonce() );
+
+		// Prepare the encoder object to pass around
+		$encoder = new Encoder();
+
+		// Generate a new auth key if needed
+		if ( empty ( $auth_key_object ) ) {
+			$auth_key_object = new KeyPair( $auth_key );
+			$auth_key_object->generate( $auth_key_passphrase );
+
+			// Store the key for future use
+			$option_storage = Option::get_instance();
+			$option_storage->save( $auth_key_object );
+
+			Utils::display_line( 'Generated key' );
+		}
+
+		// Register the new account
+		$registration = new Registration( 'new-reg', $email, $resources, $nonce_collector, $encoder );
+		$registration->sign( $auth_key_object, $auth_key_passphrase );
+
+		Utils::display_debug_message( $debug, 'Sending registration' );
+		$registration->send( true );
+	}
 
 	public function terms_of_service( $args, $assoc_args ) {}
 
@@ -431,4 +531,4 @@ class Cert extends WP_CLI_Command {
 	}
 }
 
-WP_CLI::add_command( 'cert', '\LEWP\Commands\Cert\Cert' );
+WP_CLI::add_command( 'cert', '\LEWP\WordPress\Commands\Cert\Cert' );

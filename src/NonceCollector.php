@@ -1,6 +1,7 @@
 <?php
 
 namespace LEWP;
+use LEWP\Request\Directory;
 
 /**
  * Class NonceCollector.
@@ -11,32 +12,21 @@ namespace LEWP;
  * @package LEWP
  */
 class NonceCollector {
-	/**
-	 * Collection of nonces.
-	 *
-	 * When a request is made, the replay-nonce header values is added to this array. It is then plucked off when the
-	 * next request is made.
-	 *
-	 * @var array    The nonces collected from the requests.
-	 */
-	private $nonces = [];
-
-	/**
-	 * The index of the current nonce.
-	 *
-	 * @var int    The index of the current nonce.
-	 */
-	private $index = 0;
+	private $nonce_key = 'lewp-nonces';
 
 	/**
 	 * NonceCollector constructor.
 	 *
 	 * Instantiate the NonceCollector object. Optional send an initial nonce to get things started.
 	 *
-	 * @param  string    $nonce    The first nonce in the object.
+	 * @param  string    $directory_uri    The URI for the resource the nonce is being retrieved from.
+	 * @param  string    $nonce            The first nonce in the object.
 	 * @return NonceCollector
 	 */
-	public function __construct( $nonce = '' ) {
+	public function __construct( $directory_uri, $nonce = '' ) {
+		$this->directory_uri = $directory_uri;
+		$this->host          = parse_url( $directory_uri, PHP_URL_HOST );
+
 		if ( ! empty( $nonce ) ) {
 			$this->add_nonce( $nonce );
 		}
@@ -49,80 +39,57 @@ class NonceCollector {
 	 *
 	 * @return string    A replay nonce.
 	 */
-	public function get_next_nonce() {
-		$index  = $this->get_index();
-		$nonces = $this->get_nonces();
+	public function get_nonce() {
+		$nonces = $this->retrieve_nonces();
 
-		$nonce = '';
+		if ( isset( $nonces[ $this->host ][0] ) ) {
+			$nonce = $nonces[ $this->host ][0];
+			$this->remove_nonce( $nonce );
+		} else {
+			$directory_request = new Directory( $this->directory_uri );
+			$directory_request->send();
 
-		if ( isset( $nonces[ $index ] ) ) {
-			$nonce = $nonces[ $index ];
-			$this->increment_index();
+			$nonce = $directory_request->get_response_headers()['replay-nonce'];
 		}
 
 		return $nonce;
 	}
 
 	/**
-	 * Move the nonce index ahead by one.
-	 *
-	 * @return void
-	 */
-	public function increment_index() {
-		$index = $this->get_index();
-		$index++;
-
-		$this->set_index( $index );
-	}
-
-	/**
 	 * Add a nonce to the array.
 	 *
-	 * @param  string    $nonce    The nonce to add.
+	 * @param  string    $nonce            The nonce to add.
 	 * @return void
 	 */
 	public function add_nonce( $nonce ) {
-		$nonces = $this->get_nonces();
-		array_push( $nonces, $nonce );
+		$nonces = $this->retrieve_nonces();
 
-		$this->set_nonces( $nonces );
+		if ( ! isset( $nonces[ $this->host ] ) ) {
+			$nonces[ $this->host ] = array();
+		}
+
+		array_push( $nonces[ $this->host ], $nonce );
+
+		$this->update_nonces( $nonces );
 	}
 
-	/**
-	 * Return the nonces.
-	 *
-	 * @return array    The collected nonces.
-	 */
-	public function get_nonces() {
-		return $this->nonces;
+	public function remove_nonce( $nonce ) {
+		$nonces = $this->retrieve_nonces();
+
+		if ( ! empty( $nonces[ $this->host ] ) ) {
+			$key = array_search( $nonce, $nonces[ $this->host ] );
+
+			if ( false !== $key ) {
+				unset( $nonces[ $this->host ][ $key ] );
+			}
+		}
 	}
 
-	/**
-	 * Set the array of nonces.
-	 *
-	 * @param  array    $nonces    The array of nonces.
-	 * @return void
-	 */
-	public function set_nonces( $nonces ) {
-		$this->nonces = $nonces;
+	public function retrieve_nonces() {
+		return \get_option( $this->nonce_key, array() );
 	}
 
-	/**
-	 * Return the current index for the nonce array.
-	 *
-	 * @return int    The current nonce index.
-	 */
-	public function get_index() {
-		return $this->index;
-	}
-
-	/**
-	 * Set the index.
-	 *
-	 * @param  int     $index    The index to set.
-	 * @return void
-	 */
-	public function set_index( $index ) {
-		$this->index = $index;
+	public function update_nonces( $nonces ) {
+		return \update_option( $this->nonce_key, $nonces, 'no' );
 	}
 }

@@ -135,7 +135,7 @@ abstract class Request {
 
 		if ( ! empty( $args['nonce_collector'] ) ) {
 			$this->set_nonce_collector( $args['nonce_collector'] );
-			$this->set_request_nonce( $this->nonce_collector->get_next_nonce() );
+			$this->set_request_nonce( $this->nonce_collector->get_nonce() );
 		}
 
 		if ( ! empty( $args['encoder'] ) ) {

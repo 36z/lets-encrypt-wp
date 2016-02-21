@@ -1,6 +1,6 @@
 <?php
 
-namespace LEWP\Commands;
+namespace LEWP\WordPress\Commands;
 use WP_CLI;
 
 class Utils {
