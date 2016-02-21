@@ -11,3 +11,5 @@
 namespace LEWP;
 
 require_once __DIR__ . '/vendor/autoload.php';
+
+new Commands\Cert\Cert();
