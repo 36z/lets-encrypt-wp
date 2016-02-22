@@ -277,9 +277,6 @@ class Cert extends WP_CLI_Command {
 	 * <directory-uri>
 	 * : The directory URI for the CA's ACME server.
 	 *
-	 * <domain>
-	 * : The domain to issue a certificate for.
-	 *
 	 * <auth-key>
 	 * : ID for stored key, path to key, or DER encoded key.
 	 *
@@ -296,7 +293,7 @@ class Cert extends WP_CLI_Command {
 	 *
 	 *     wp example hello Newman
 	 *
-	 * @synopsis --directory-uri=<directory-uri> --domain=<domain> --auth-key=<auth-key> --auth-key-passphrase=<auth-key-passphrase> --email=<email> [--debug-level=<debug>]
+	 * @synopsis --directory-uri=<directory-uri> --auth-key=<auth-key> --auth-key-passphrase=<auth-key-passphrase> --email=<email> [--debug-level=<debug>]
 	 * @subcommand registration
 	 */
 	public function registration( $args, $assoc_args ) {
@@ -336,20 +333,9 @@ class Cert extends WP_CLI_Command {
 			$debug = $assoc_args['debug-level'];
 		}
 
-		// Kick things off by getting the directory information and storing it for later use
-		Utils::display_debug_message( $debug, 'Discovering ACME resources' );
-
-		// @todo: we need to cache either the directory request or the resulting resources object. It does not make sense that these resources will change often.
-
-		$directory_request = new Directory( $directory_uri );
-		$directory_request->send();
-
-		// Validate and store the resources
-		$resources = new Resources( $directory_request->get_response_body() );
+		$directory = new \LEWP\WordPress\Object\Directory( $directory_uri );
+		$resources = new Resources( $directory->populate() );
 		Utils::display_debug_message( $debug, '', 'resources discovered', $resources->get_resource_urls() );
-
-		// Initialize our nonce collector that tracks nonces throughout the nonce flow
-		$nonce_collector = new NonceCollector( $directory_request->get_response_nonce() );
 
 		// Prepare the encoder object to pass around
 		$encoder = new Encoder();
@@ -367,11 +353,10 @@ class Cert extends WP_CLI_Command {
 		}
 
 		// Register the new account
-		$registration = new Registration( 'new-reg', $email, $resources, $nonce_collector, $encoder );
-		$registration->sign( $auth_key_object, $auth_key_passphrase );
+		$registration = new \LEWP\WordPress\Object\Registration( 'test', $email, $resources, new NonceCollector( $directory_uri ), $encoder );
+		$registration->populate();
 
 		Utils::display_debug_message( $debug, 'Sending registration' );
-		$registration->send( true );
 	}
 
 	public function terms_of_service( $args, $assoc_args ) {}

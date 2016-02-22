@@ -5,6 +5,12 @@ namespace LEWP\WordPress\Object;
 abstract class Object {
 	protected $post_id = 0;
 
+	public function __construct( $resources, $nonce_collector, $encoder ) {
+		$this->resources       = $resources;
+		$this->nonce_collector = $nonce_collector;
+		$this->encoder         = $encoder;
+	}
+
 	public function save( $identifier, $data ) {
 		$option = json_decode( \get_option( $this->content_type, '{}' ), true );
 		$option[ $identifier ] = $data;
