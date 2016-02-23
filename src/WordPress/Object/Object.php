@@ -12,14 +12,14 @@ abstract class Object {
 	}
 
 	public function save( $identifier, $data ) {
-		$option = json_decode( \get_option( $this->content_type, '{}' ), true );
+		$option = json_decode( \get_option( $this->object_type, '{}' ), true );
 		$option[ $identifier ] = $data;
 
-		return \update_option( $this->content_type, json_encode( $option ) );
+		return \update_option( $this->object_type, json_encode( $option, JSON_UNESCAPED_SLASHES ) );
 	}
 
 	public function get( $identifier ) {
-		$option = json_decode( \get_option( $this->content_type, '{}' ), true );
+		$option = json_decode( \get_option( $this->object_type, '{}' ), true );
 		$data = array();
 
 		if ( isset( $option[ $identifier ] ) ) {

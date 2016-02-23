@@ -277,6 +277,9 @@ class Cert extends WP_CLI_Command {
 	 * <directory-uri>
 	 * : The directory URI for the CA's ACME server.
 	 *
+	 * <registration-id>
+	 * : The identifying string for the registration object.
+	 *
 	 * <auth-key>
 	 * : ID for stored key, path to key, or DER encoded key.
 	 *
@@ -293,11 +296,12 @@ class Cert extends WP_CLI_Command {
 	 *
 	 *     wp example hello Newman
 	 *
-	 * @synopsis --directory-uri=<directory-uri> --auth-key=<auth-key> --auth-key-passphrase=<auth-key-passphrase> --email=<email> [--debug-level=<debug>]
+	 * @synopsis --directory-uri=<directory-uri> --registration-id=<registration-id> --auth-key=<auth-key> --auth-key-passphrase=<auth-key-passphrase> --email=<email> [--debug-level=<debug>]
 	 * @subcommand registration
 	 */
 	public function registration( $args, $assoc_args ) {
 		$directory_uri       = '';
+		$registration_id     = '';
 		$auth_key_passphrase = '';
 		$auth_key            = '';
 		$email               = '';
@@ -308,6 +312,10 @@ class Cert extends WP_CLI_Command {
 
 		if ( ! empty( $assoc_args['directory-uri'] ) ) {
 			$directory_uri = $assoc_args['directory-uri'];
+		}
+
+		if ( ! empty( $assoc_args['registration-id'] ) ) {
+			$registration_id = $assoc_args['registration-id'];
 		}
 
 		if ( ! empty( $assoc_args['auth-key-passphrase'] ) ) {
@@ -353,10 +361,10 @@ class Cert extends WP_CLI_Command {
 		}
 
 		// Register the new account
-		$registration = new \LEWP\WordPress\Object\Registration( 'test', $email, $resources, new NonceCollector( $directory_uri ), $encoder );
-		$registration->populate();
+		$registration = new \LEWP\WordPress\Object\Registration( $registration_id, $email, $auth_key_object, $auth_key_passphrase, $resources, new NonceCollector( $directory_uri ), $encoder );
+		$registration_object = $registration->populate();
 
-		Utils::display_debug_message( $debug, 'Sending registration' );
+		Utils::display_debug_message( $debug, 'Sending registration', json_encode( $registration_object ) );
 	}
 
 	public function terms_of_service( $args, $assoc_args ) {}

@@ -2,6 +2,8 @@
 
 namespace LEWP\Request;
 
+use LEWP\LinkParser;
+
 class Registration extends Request {
 	/**
 	 * Construct the object.
@@ -28,5 +30,29 @@ class Registration extends Request {
 				)
 			),
 		) );
+	}
+
+	public function parse_response( $body, $headers ) {
+		$skeleton = [
+			'contact'        => [],
+			'agreement'      => '',
+			'authorizations' => '',
+			'certificates'   => '',
+			'extra'          => [
+				'terms-of-service' => '',
+			]
+		];
+
+		if ( ! empty( $body['contact'] ) ) {
+			$skeleton['contact'] = $body['contact'];
+		}
+
+		if ( ! empty( $headers['link'] ) ) {
+			$link_parser = new LinkParser( $headers['link'] );
+			$skeleton['extra']['terms-of-service'] = $link_parser->get_header_link( 'terms-of-service' );
+		}
+
+		$this->object = $skeleton;
+		return $this->object;
 	}
 }
